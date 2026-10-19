@@ -1,0 +1,12 @@
+run: docker compose up
+seed: docker compose exec app node seed.js
+test: docker compose exec app node eval.js
+base_url: http://localhost:3000
+endpoints:
+  - GET /images
+  - POST /images/batch
+  - GET /posts/:id/images
+  - POST /suggestions/:id/approve
+  - POST /suggestions/:id/reject
+  - GET /eval/results
+  - GET /cost

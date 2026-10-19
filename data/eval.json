@@ -1,0 +1,12 @@
+[
+  { "post_id": 1, "correct_image_filename": "red-fox-1.jpg" },
+  { "post_id": 2, "correct_image_filename": "gray-wolf-1.jpg" },
+  { "post_id": 3, "correct_image_filename": "dog-1.jpg" },
+  { "post_id": 4, "correct_image_filename": "brown-bear-1.jpg" },
+  { "post_id": 5, "correct_image_filename": "deer-1.jpg" },
+  { "post_id": 6, "correct_image_filename": "forest-autumn-1.jpg" },
+  { "post_id": 7, "correct_image_filename": "mountain-lake-1.jpg" },
+  { "post_id": 8, "correct_image_filename": "street-city-1.jpg" },
+  { "post_id": 9, "correct_image_filename": "parrot-1.jpg" },
+  { "post_id": 10, "correct_image_filename": "cactus-1.jpg" }
+]

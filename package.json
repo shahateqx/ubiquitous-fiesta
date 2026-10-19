@@ -1,0 +1,27 @@
+{
+  "name": "flyrank-image-matching-engine",
+  "version": "1.0.0",
+  "description": "FlyRank AI Image Matching Engine - Gemini Vision + Embeddings + pgvector",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "worker": "node worker.js",
+    "migrate": "node src/data/migrate.js",
+    "seed": "node seed.js",
+    "eval": "node eval.js",
+    "dev": "node --watch index.js"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.21.0",
+    "axios": "^1.7.7",
+    "bullmq": "^5.13.2",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.0",
+    "ioredis": "^5.4.1",
+    "pg": "^8.13.0",
+    "zod": "^3.23.8"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
