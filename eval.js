@@ -61,7 +61,9 @@ async function runEval() {
     `, [top1Id]);
 
     const topImage = imgRows[0];
-    const top1Correct = topImage?.filename === correct_image_filename;
+    const top1Correct = Array.isArray(correct_image_filename)
+      ? correct_image_filename.includes(topImage?.filename)
+      : topImage?.filename === correct_image_filename;
     if (top1Correct) hits++;
 
     const guard = mismatchGuard(post, {
@@ -85,7 +87,7 @@ async function runEval() {
       correct_image_filename,
       top1_image_filename: topImage?.filename,
       top1_score: top1Score,
-      top1_correct,
+      top1_correct: top1Correct,
       guard_passed: guard.passed,
       guard_reason: guard.reason,
     });

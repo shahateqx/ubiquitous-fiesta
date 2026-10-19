@@ -5,10 +5,10 @@ const { logCost } = require('../utils/costTracker');
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-const EMBEDDING_MODEL = 'text-embedding-004';
+const EMBEDDING_MODEL = 'gemini-embedding-001';
 
 /**
- * Generate a text embedding using Gemini text-embedding-004.
+ * Generate a text embedding using Gemini embedding model.
  *
  * @param {string} text - Text to embed
  * @returns {Promise<number[]>} - Float array embedding

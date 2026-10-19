@@ -7,7 +7,7 @@ const { logCost } = require('../utils/costTracker');
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-const VISION_MODEL = 'gemini-1.5-flash';
+const VISION_MODEL = 'gemini-3.5-flash-lite';
 const MAX_RETRIES = 3;
 
 // ── Zod schema for structured vision output ──────────────────────────────────
@@ -74,6 +74,9 @@ Return ONLY valid JSON, no markdown, no extra text.`
       let parsed;
       try {
         parsed = JSON.parse(rawText);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          parsed = parsed[0];
+        }
       } catch {
         throw new Error(`Invalid JSON from vision model: ${rawText.slice(0, 200)}`);
       }
@@ -88,7 +91,12 @@ Return ONLY valid JSON, no markdown, no extra text.`
       lastError = err;
       console.warn(`[visionService] Attempt ${attempt}/${MAX_RETRIES} failed: ${err.message}`);
       if (attempt < MAX_RETRIES) {
-        await new Promise(r => setTimeout(r, 1000 * attempt)); // exponential back-off
+        let waitMs = 2000 * attempt;
+        if (err.message && (err.message.includes('429') || err.message.includes('Quota exceeded'))) {
+          waitMs = 35000; // wait 35s when quota exceeded
+          console.log(`[visionService] Rate limit hit — waiting ${waitMs / 1000}s before retry...`);
+        }
+        await new Promise(r => setTimeout(r, waitMs));
       }
     }
   }

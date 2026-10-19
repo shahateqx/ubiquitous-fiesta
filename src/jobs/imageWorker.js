@@ -28,14 +28,17 @@ const imageWorker = new Worker(
       console.warn(`[imageWorker] Image ${imageId} flagged — skipping embedding.`);
     }
 
+    // Space out calls to stay strictly within 5 req/min free tier limit
+    await new Promise(r => setTimeout(r, 13000));
+
     return { imageId, status, subject: tag.subject };
   },
   {
     connection,
-    concurrency: 3,              // Process up to 3 images in parallel
+    concurrency: 1,              // Process sequentially to prevent quota spikes
     limiter: {
-      max: 10,
-      duration: 60_000,          // Max 10 Gemini calls per minute (rate limit safety)
+      max: 4,
+      duration: 60_000,          // 4 calls per minute (safely below 5/min limit)
     },
   }
 );

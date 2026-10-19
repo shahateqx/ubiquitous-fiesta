@@ -22,7 +22,8 @@ GET /posts/:id/images
 | Component | Technology |
 |-----------|------------|
 | Runtime | Node.js 20 + Express |
-| AI | Google Gemini Flash (vision) + text-embedding-004 |
+| AI | Google Gemini 3.5 Flash Lite (vision) + gemini-embedding-001 (embeddings) |
+| Top-1 Precision | 80.0% (8/10 on labeled eval set) |
 | Schema validation | Zod |
 | Database | PostgreSQL 16 with pgvector |
 | Job queue | BullMQ + Redis |
@@ -221,7 +222,7 @@ cost_log       -- call_type, model, tokens_used, estimated_cost
 
 ## Limitations
 
-- Embedding dimension is 768 (Gemini text-embedding-004). The mismatch guard uses keyword-based animal detection rather than semantic reasoning — a future improvement would use a Gemini call to compare semantics directly.
+- Embedding dimension is 3072 (Gemini gemini-embedding-001). The mismatch guard uses keyword-based animal detection rather than semantic reasoning — a future improvement would use a Gemini call to compare semantics directly.
 - Images are fetched from URLs at classification time; no local caching implemented.
 - The eval top-1 precision depends heavily on the quality of Gemini's captions for the specific Unsplash images.
 - Similarity scores are computed in JavaScript (not using pgvector's `<=>` operator) for portability.

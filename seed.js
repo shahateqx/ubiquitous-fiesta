@@ -56,12 +56,12 @@ const posts = [
   },
 ];
 
-// ── Sample images from Unsplash ───────────────────────────────────────────────
+// ── Sample images from Unsplash (verified working URLs) ──────────────────────
 const images = [
   { filename: 'red-fox-1.jpg',      url: 'https://images.unsplash.com/photo-1474511320723-9a56873867b5?w=800' },
   { filename: 'red-fox-2.jpg',      url: 'https://images.unsplash.com/photo-1516934024742-b461fba47600?w=800' },
   { filename: 'gray-wolf-1.jpg',    url: 'https://images.unsplash.com/photo-1564466809058-bf4114d55352?w=800' },
-  { filename: 'gray-wolf-2.jpg',    url: 'https://images.unsplash.com/photo-1551887373-6edba6dacbb1?w=800' },
+  { filename: 'gray-wolf-2.jpg',    url: 'https://images.unsplash.com/photo-1561731216-c3a4d99437d5?w=800' },
   { filename: 'dog-1.jpg',          url: 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=800' },
   { filename: 'dog-2.jpg',          url: 'https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=800' },
   { filename: 'brown-bear-1.jpg',   url: 'https://images.unsplash.com/photo-1530595467537-0b5996c41f2d?w=800' },
@@ -72,7 +72,7 @@ const images = [
   { filename: 'parrot-1.jpg',       url: 'https://images.unsplash.com/photo-1552728089-57bdde30beb3?w=800' },
   { filename: 'cactus-1.jpg',       url: 'https://images.unsplash.com/photo-1533038590840-1cde6e668a91?w=800' },
   { filename: 'fox-forest-1.jpg',   url: 'https://images.unsplash.com/photo-1585110396000-c9ffd4e4b308?w=800' },
-  { filename: 'wolf-pack-1.jpg',    url: 'https://images.unsplash.com/photo-1615457890014-f6099c7c3963?w=800' },
+  { filename: 'wolf-pack-1.jpg',    url: 'https://images.unsplash.com/photo-1575550959106-5a7defe28b56?w=800' },
 ];
 
 async function sleep(ms) {
@@ -116,32 +116,34 @@ async function seedPosts() {
   console.log('[seed] Seeding posts...');
   const seeded = [];
   for (const p of posts) {
-    // Check if already exists
+    let postId;
     const { rows: existing } = await query('SELECT id FROM posts WHERE title = $1', [p.title]);
     if (existing.length > 0) {
-      console.log(`[seed] Post already exists: "${p.title}" (id=${existing[0].id})`);
-      seeded.push(existing[0].id);
-      continue;
+      postId = existing[0].id;
+      console.log(`[seed] Post already exists: "${p.title}" (id=${postId})`);
+    } else {
+      const { rows } = await query(
+        'INSERT INTO posts (title, content) VALUES ($1, $2) RETURNING id',
+        [p.title, p.content]
+      );
+      postId = rows[0].id;
+      console.log(`[seed] Created post id=${postId}: "${p.title}"`);
     }
-
-    const { rows } = await query(
-      'INSERT INTO posts (title, content) VALUES ($1, $2) RETURNING id',
-      [p.title, p.content]
-    );
-    const postId = rows[0].id;
     seeded.push(postId);
-    console.log(`[seed] Created post id=${postId}: "${p.title}"`);
 
-    // Embed the post
-    try {
-      await embedPost(postId, p.title, p.content);
-      console.log(`[seed] Embedded post ${postId}`);
-    } catch (err) {
-      console.warn(`[seed] Failed to embed post ${postId}: ${err.message}`);
+    // Check if vector exists in post_vectors
+    const { rows: vectorRows } = await query('SELECT id FROM post_vectors WHERE post_id = $1', [postId]);
+    if (vectorRows.length === 0) {
+      try {
+        await embedPost(postId, p.title, p.content);
+        console.log(`[seed] Embedded post ${postId}`);
+      } catch (err) {
+        console.warn(`[seed] Failed to embed post ${postId}: ${err.message}`);
+      }
+      await sleep(500);
+    } else {
+      console.log(`[seed] Post ${postId} already has embedding.`);
     }
-
-    // Small delay to avoid rate limiting
-    await sleep(500);
   }
   return seeded;
 }
@@ -150,20 +152,30 @@ async function seedImages() {
   console.log('[seed] Seeding images...');
   const seeded = [];
   for (const img of images) {
-    const { rows: existing } = await query('SELECT id FROM images WHERE filename = $1', [img.filename]);
+    let imageId;
+    const { rows: existing } = await query('SELECT id, status FROM images WHERE filename = $1', [img.filename]);
     if (existing.length > 0) {
-      console.log(`[seed] Image already exists: ${img.filename} (id=${existing[0].id})`);
-      seeded.push({ id: existing[0].id, url: img.url });
-      continue;
+      imageId = existing[0].id;
+      await query('UPDATE images SET url = $1 WHERE id = $2', [img.url, imageId]);
+      
+      // If it was previously flagged with placeholder data, reset to pending
+      if (existing[0].status === 'flagged') {
+        await query('DELETE FROM image_tags WHERE image_id = $1', [imageId]);
+        await query('DELETE FROM image_vectors WHERE image_id = $1', [imageId]);
+        await query("UPDATE images SET status = 'pending' WHERE id = $1", [imageId]);
+        console.log(`[seed] Reset previously flagged image: ${img.filename} (id=${imageId}) to pending`);
+      } else {
+        console.log(`[seed] Image exists: ${img.filename} (id=${imageId}, status=${existing[0].status})`);
+      }
+    } else {
+      const { rows } = await query(
+        "INSERT INTO images (filename, url, status) VALUES ($1, $2, 'pending') RETURNING id",
+        [img.filename, img.url]
+      );
+      imageId = rows[0].id;
+      console.log(`[seed] Registered image id=${imageId}: ${img.filename}`);
     }
-
-    const { rows } = await query(
-      "INSERT INTO images (filename, url, status) VALUES ($1, $2, 'pending') RETURNING id",
-      [img.filename, img.url]
-    );
-    const imageId = rows[0].id;
     seeded.push({ id: imageId, url: img.url });
-    console.log(`[seed] Registered image id=${imageId}: ${img.filename}`);
   }
   return seeded;
 }
@@ -177,15 +189,17 @@ async function main() {
     await seedPosts();
 
     // 3. Seed images
-    const imageRecords = await seedImages();
+    await seedImages();
 
-    // 4. Trigger batch processing job for all pending images
-    const pending = imageRecords.filter(() => true); // trigger for all registered
-    if (pending.length > 0) {
-      const jobsData = pending.map(img => ({ imageId: img.id, imageUrl: img.url }));
+    // 4. Trigger batch processing job for all pending images in DB
+    const { rows: pendingImages } = await query("SELECT id, url FROM images WHERE status = 'pending'");
+    if (pendingImages.length > 0) {
+      const jobsData = pendingImages.map(img => ({ imageId: img.id, imageUrl: img.url }));
       const jobs = await addBatchImageJobs(jobsData);
       console.log(`[seed] Queued ${jobs.length} image(s) for vision processing + embedding.`);
-      console.log('[seed] Start the worker to process them: node worker.js');
+      console.log('[seed] The worker container is processing them in the background.');
+    } else {
+      console.log('[seed] No pending images to queue.');
     }
 
     console.log('[seed] ✅ Seed complete!');

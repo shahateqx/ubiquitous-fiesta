@@ -1,7 +1,7 @@
 [
-  { "post_id": 1, "correct_image_filename": "red-fox-1.jpg" },
-  { "post_id": 2, "correct_image_filename": "gray-wolf-1.jpg" },
-  { "post_id": 3, "correct_image_filename": "dog-1.jpg" },
+  { "post_id": 1, "correct_image_filename": ["red-fox-1.jpg", "red-fox-2.jpg"] },
+  { "post_id": 2, "correct_image_filename": ["gray-wolf-1.jpg", "gray-wolf-2.jpg", "wolf-pack-1.jpg"] },
+  { "post_id": 3, "correct_image_filename": ["dog-1.jpg", "dog-2.jpg"] },
   { "post_id": 4, "correct_image_filename": "brown-bear-1.jpg" },
   { "post_id": 5, "correct_image_filename": "deer-1.jpg" },
   { "post_id": 6, "correct_image_filename": "forest-autumn-1.jpg" },
